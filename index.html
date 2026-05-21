@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Calibración">
+<title>Calibración de Básculas — Avícola Salvadoreña</title>
+<style>
+  :root {
+    --green: #1D9E75;
+    --green-dark: #0F6E56;
+    --green-darker: #085041;
+    --green-light: #E1F5EE;
+    --green-mid: #5DCAA5;
+    --red-light: #FCEBEB;
+    --red: #A32D2D;
+    --red-mid: #F09595;
+    --bg: #f5f5f3;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.12);
+    --border-soft: rgba(0,0,0,0.07);
+    --text: #1a1a18;
+    --text-muted: #6b6b68;
+    --text-hint: #9e9e9a;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { min-height: 100vh; background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); }
+  
+  .app { max-width: 480px; margin: 0 auto; padding: 0 0 80px; }
+
+  /* HEADER */
+  .header { background: var(--green-dark); padding: 1rem 1.25rem; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10; }
+  .header-icon { width: 38px; height: 38px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .header h1 { font-size: 15px; font-weight: 600; color: #fff; }
+  .header p { font-size: 12px; color: rgba(255,255,255,0.7); }
+
+  /* STEPS */
+  .step-bar { background: var(--green-darker); padding: 0 1.25rem 0.75rem; display: flex; gap: 6px; }
+  .step-dot { flex: 1; height: 3px; border-radius: 2px; background: rgba(255,255,255,0.25); transition: background 0.3s; }
+  .step-dot.active { background: #fff; }
+  .step-dot.done { background: var(--green-mid); }
+  .step-label { background: var(--green-darker); padding: 0 1.25rem 1rem; }
+  .step-label span { font-size: 11px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.06em; }
+  .step-label strong { display: block; font-size: 16px; color: #fff; font-weight: 500; margin-top: 2px; }
+
+  /* CONTENT */
+  .content { padding: 1.25rem; }
+  .step-panel { display: none; }
+  .step-panel.visible { display: block; }
+
+  /* CARD */
+  .card { background: var(--surface); border: 0.5px solid var(--border-soft); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+  .card-title { font-size: 11px; font-weight: 600; color: var(--green); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+
+  /* FIELDS */
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
+  .field input, .field select, .field textarea {
+    width: 100%; padding: 10px 12px; font-size: 15px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: #fafaf8; color: var(--text);
+    -webkit-appearance: none; appearance: none;
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--green); background: #fff; }
+  .field input[readonly] { background: var(--bg); color: var(--text-muted); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+  /* CONFORME */
+  .conforme-row { display: flex; align-items: center; justify-content: space-between; padding-top: 12px; margin-top: 12px; border-top: 0.5px solid var(--border-soft); }
+  .conforme-row span { font-size: 13px; font-weight: 500; }
+  .toggle-group { display: flex; gap: 6px; }
+  .toggle-btn { padding: 7px 18px; border-radius: 20px; border: 1px solid var(--border); background: transparent; font-size: 13px; font-family: inherit; cursor: pointer; color: var(--text-muted); transition: all 0.15s; }
+  .toggle-btn.si { background: var(--green-light); color: var(--green-darker); border-color: var(--green-mid); }
+  .toggle-btn.no { background: var(--red-light); color: var(--red); border-color: var(--red-mid); }
+
+  /* REP TABLE */
+  .rep-header { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 6px; }
+  .rep-header span { font-size: 11px; font-weight: 600; color: var(--text-muted); }
+  .rep-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+
+  /* NAV */
+  .nav { display: flex; gap: 10px; margin-top: 1.5rem; }
+  .btn-back { flex: 1; padding: 13px; border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit; cursor: pointer; color: var(--text-muted); }
+  .btn-next, .btn-submit { flex: 2; padding: 13px; background: var(--green); border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; color: white; }
+  .btn-submit { background: var(--green-dark); }
+  .btn-back:active, .btn-next:active, .btn-submit:active { transform: scale(0.98); }
+
+  /* SUCCESS */
+  .success-wrap { padding: 2rem 1.25rem; text-align: center; }
+  .success-icon { width: 72px; height: 72px; background: var(--green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; font-size: 36px; }
+  .success-wrap h2 { font-size: 20px; font-weight: 600; color: var(--green-darker); margin-bottom: 8px; }
+  .success-wrap p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+  .btn-full { width: 100%; padding: 14px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; margin-top: 12px; border: none; }
+  .btn-pdf { background: var(--green); color: white; }
+  .btn-new { background: var(--surface); color: var(--text); border: 1px solid var(--border) !important; }
+
+  /* SECTION DIVIDER */
+  .section-divider { font-size: 11px; font-weight: 600; color: var(--text-hint); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: #1a1a18; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 99; transition: transform 0.3s; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* PDF preview */
+  #pdf-preview { display: none; }
+  @media print {
+    .app { display: none; }
+    #pdf-preview { display: block; font-family: Arial, sans-serif; padding: 20px; font-size: 12px; }
+    .pdf-header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 16px; }
+    .pdf-header h1 { font-size: 16px; }
+    .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    .pdf-table td, .pdf-table th { border: 1px solid #ccc; padding: 6px 8px; font-size: 11px; }
+    .pdf-table th { background: #e8f5ee; font-weight: bold; }
+    .pdf-section { margin-bottom: 12px; }
+    .pdf-section h3 { font-size: 13px; background: #1D9E75; color: white; padding: 4px 8px; margin-bottom: 6px; }
+    .pdf-footer { display: flex; justify-content: space-between; margin-top: 30px; border-top: 1px solid #ccc; padding-top: 16px; }
+    .pdf-sign { text-align: center; width: 45%; }
+    .pdf-sign .line { border-top: 1px solid #333; margin-bottom: 4px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-icon">⚖️</div>
+    <div>
+      <h1>Calibración de Básculas</h1>
+      <p>Avícola Salvadoreña — Mantenimiento</p>
+    </div>
+  </div>
+  <div class="step-bar">
+    <div class="step-dot active" id="dot0"></div>
+    <div class="step-dot" id="dot1"></div>
+    <div class="step-dot" id="dot2"></div>
+    <div class="step-dot" id="dot3"></div>
+  </div>
+  <div class="step-label">
+    <span id="step-num">Paso 1 de 4</span>
+    <strong id="step-name">Datos del equipo</strong>
+  </div>
+
+  <div class="content">
+
+    <!-- PASO 0: Datos del equipo -->
+    <div class="step-panel visible" id="step0">
+      <div class="card">
+        <div class="card-title">🔧 Identificación del equipo</div>
+        <div class="field"><label>Nombre del equipo</label><input type="text" id="nombre" placeholder="Ej. Báscula de plataforma"></div>
+        <div class="row2">
+          <div class="field"><label>Marca</label><input type="text" id="marca" placeholder="OHAUS"></div>
+          <div class="field"><label>Modelo</label><input type="text" id="modelo" placeholder="T31P"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>No. Serie</label><input type="text" id="serie" placeholder="SN-00123"></div>
+          <div class="field"><label>Categoría</label><input type="text" id="categoria" placeholder="III"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>Tamaño de división (D)</label><input type="text" id="division" placeholder="0.1 kg"></div>
+          <div class="field"><label>Rango</label><input type="text" id="rango" placeholder="0–150 kg"></div>
+        </div>
+        <div class="field"><label>Masas patrón</label><input type="text" id="masas" placeholder="5 kg, 10 kg, 20 kg"></div>
+      </div>
+      <div class="nav">
+        <button class="btn-next" onclick="goStep(1)">Siguiente →</button>
+      </div>
+    </div>
+
+    <!-- PASO 1: Condiciones ambientales -->
+    <div class="step-panel" id="step1">
+      <div class="card">
+        <div class="card-title">🌡️ Condiciones iniciales</div>
+        <div class="row2">
+          <div class="field"><label>Temperatura (°C)</label><input type="number" id="temp_ini" placeholder="25.0" step="0.1"></div>
+          <div class="field"><label>Humedad (%)</label><input type="number" id="hum_ini" placeholder="65"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🌡️ Condiciones finales</div>
+        <div class="row2">
+          <div class="field"><label>Temperatura (°C)</label><input type="number" id="temp_fin" placeholder="26.0" step="0.1"></div>
+          <div class="field"><label>Humedad (%)</label><input type="number" id="hum_fin" placeholder="66"></div>
+        </div>
+      </div>
+      <div class="nav">
+        <button class="btn-back" onclick="goStep(0)">← Atrás</button>
+        <button class="btn-next" onclick="goStep(2)">Siguiente →</button>
+      </div>
+    </div>
+
+    <!-- PASO 2: Excentricidad -->
+    <div class="step-panel" id="step2">
+      <div class="card">
+        <div class="card-title">⭕ Excentricidad (EMP)</div>
+        <div class="field"><label>Carga aplicada</label><input type="text" id="exc_carga" placeholder="Ej. 50 kg"></div>
+        <div class="section-divider" style="margin-top:14px;">Error por posición</div>
+        <div class="row2">
+          <div class="field"><label>Posición 1</label><input type="number" id="pos1" step="0.001" placeholder="0.000"></div>
+          <div class="field"><label>Posición 2</label><input type="number" id="pos2" step="0.001" placeholder="0.000"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>Posición 3</label><input type="number" id="pos3" step="0.001" placeholder="0.000"></div>
+          <div class="field"><label>Posición 4</label><input type="number" id="pos4" step="0.001" placeholder="0.000"></div>
+        </div>
+        <div class="field" style="max-width:50%"><label>Posición 5</label><input type="number" id="pos5" step="0.001" placeholder="0.000"></div>
+        <div class="conforme-row">
+          <span>¿Equipo conforme?</span>
+          <div class="toggle-group">
+            <button class="toggle-btn" id="exc_si" onclick="setConforme('exc','SI')">Sí</button>
+            <button class="toggle-btn" id="exc_no" onclick="setConforme('exc','NO')">No</button>
+          </div>
+        </div>
+      </div>
+      <div class="nav">
+        <button class="btn-back" onclick="goStep(1)">← Atrás</button>
+        <button class="btn-next" onclick="goStep(3)">Siguiente →</button>
+      </div>
+    </div>
+
+    <!-- PASO 3: Repetibilidad + responsables -->
+    <div class="step-panel" id="step3">
+      <div class="card">
+        <div class="card-title">🔁 Repetibilidad</div>
+        <div class="rep-header">
+          <span>Carga aplicada</span>
+          <span>Valor medido</span>
+          <span>Diferencia</span>
+        </div>
+        <div id="rep-rows"></div>
+        <div class="conforme-row">
+          <span>¿Equipo conforme?</span>
+          <div class="toggle-group">
+            <button class="toggle-btn" id="rep_si" onclick="setConforme('rep','SI')">Sí</button>
+            <button class="toggle-btn" id="rep_no" onclick="setConforme('rep','NO')">No</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">👤 Responsables</div>
+        <div class="row2">
+          <div class="field"><label>Verificó</label><input type="text" id="verifico" value="Ronald Chavez"></div>
+          <div class="field"><label>Aprobó</label><input type="text" id="aprobo" value="Domingo Guardado"></div>
+        </div>
+        <div class="field"><label>Fecha de emisión</label><input type="text" id="fecha_emision" readonly></div>
+      </div>
+      <div class="nav">
+        <button class="btn-back" onclick="goStep(2)">← Atrás</button>
+        <button class="btn-submit" onclick="submitForm()">✔ Guardar registro</button>
+      </div>
+    </div>
+
+    <!-- PASO 4: Éxito -->
+    <div class="step-panel" id="step4">
+      <div class="success-wrap">
+        <div class="success-icon">✅</div>
+        <h2>¡Registro guardado!</h2>
+        <p id="success-detail">Certificado listo para imprimir o guardar como PDF.</p>
+      </div>
+      <button class="btn-full btn-pdf" onclick="printPDF()">🖨️ Imprimir / Guardar PDF</button>
+      <button class="btn-full btn-new" onclick="resetForm()" style="border:1px solid #ddd;">＋ Nuevo registro</button>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<!-- PDF PARA IMPRIMIR -->
+<div id="pdf-preview">
+  <div class="pdf-header">
+    <img src="" alt="" style="display:none">
+    <h1>CERTIFICADO DE CALIBRACIÓN INTERNA</h1>
+    <p>AVÍCOLA SALVADOREÑA — Departamento de Mantenimiento</p>
+    <p>VERSIÓN: 2 &nbsp;|&nbsp; NIVEL DE CONFIANZA: 95%</p>
+  </div>
+
+  <div class="pdf-section">
+    <h3>DATOS DEL EQUIPO</h3>
+    <table class="pdf-table">
+      <tr><td><b>Nombre del equipo</b></td><td id="p_nombre"></td><td><b>No. Serie</b></td><td id="p_serie"></td></tr>
+      <tr><td><b>Marca</b></td><td id="p_marca"></td><td><b>Modelo</b></td><td id="p_modelo"></td></tr>
+      <tr><td><b>Categoría</b></td><td id="p_categoria"></td><td><b>Rango</b></td><td id="p_rango"></td></tr>
+      <tr><td><b>Tamaño de división (D)</b></td><td id="p_division"></td><td><b>Masas patrón</b></td><td id="p_masas"></td></tr>
+    </table>
+  </div>
+
+  <div class="pdf-section">
+    <h3>CONDICIONES AMBIENTALES</h3>
+    <table class="pdf-table">
+      <tr><th></th><th>Temperatura (°C)</th><th>Humedad (%)</th></tr>
+      <tr><td><b>Iniciales</b></td><td id="p_temp_ini"></td><td id="p_hum_ini"></td></tr>
+      <tr><td><b>Finales</b></td><td id="p_temp_fin"></td><td id="p_hum_fin"></td></tr>
+    </table>
+  </div>
+
+  <div class="pdf-section">
+    <h3>EXCENTRICIDAD (EMP)</h3>
+    <table class="pdf-table">
+      <tr><td><b>Carga aplicada</b></td><td id="p_exc_carga"></td></tr>
+      <tr><th>Error Pos. 1</th><th>Pos. 2</th><th>Pos. 3</th><th>Pos. 4</th><th>Pos. 5</th></tr>
+      <tr><td id="p_pos1"></td><td id="p_pos2"></td><td id="p_pos3"></td><td id="p_pos4"></td><td id="p_pos5"></td></tr>
+      <tr><td colspan="2"><b>Equipo conforme:</b></td><td colspan="3" id="p_exc_conf"></td></tr>
+    </table>
+  </div>
+
+  <div class="pdf-section">
+    <h3>REPETIBILIDAD</h3>
+    <table class="pdf-table">
+      <tr><th>Carga Aplicada</th><th>Valor Medido</th><th>Valor patrón menos valor medido</th></tr>
+      <tbody id="p_rep_rows"></tbody>
+      <tr><td colspan="2"><b>Equipo conforme:</b></td><td id="p_rep_conf"></td></tr>
+    </table>
+  </div>
+
+  <div class="pdf-footer">
+    <div class="pdf-sign">
+      <div class="line"></div>
+      <p><b>Verificó:</b> <span id="p_verifico"></span></p>
+    </div>
+    <div class="pdf-sign">
+      <div class="line"></div>
+      <p><b>Aprobó:</b> <span id="p_aprobo"></span></p>
+    </div>
+  </div>
+  <p style="text-align:center; margin-top:16px; font-size:11px; color:#666;">Fecha de emisión: <span id="p_fecha"></span></p>
+</div>
+
+<div class="toast" id="toast">✓ Guardado correctamente</div>
+
+<script>
+const stepNames = ['Datos del equipo','Condiciones ambientales','Excentricidad','Repetibilidad'];
+let conformeState = { exc: null, rep: null };
+
+function goStep(n) {
+  document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('visible'));
+  document.getElementById('step' + n).classList.add('visible');
+  document.querySelectorAll('.step-dot').forEach((d, i) => {
+    d.classList.remove('active', 'done');
+    if (i < n) d.classList.add('done');
+    if (i === n) d.classList.add('active');
+  });
+  if (n < 4) {
+    document.getElementById('step-num').textContent = 'Paso ' + (n+1) + ' de 4';
+    document.getElementById('step-name').textContent = stepNames[n];
+  }
+  window.scrollTo(0, 0);
+}
+
+function setConforme(type, val) {
+  conformeState[type] = val;
+  const si = document.getElementById(type + '_si');
+  const no = document.getElementById(type + '_no');
+  si.className = 'toggle-btn' + (val === 'SI' ? ' si' : '');
+  no.className = 'toggle-btn' + (val === 'NO' ? ' no' : '');
+}
+
+function buildRepRows() {
+  const c = document.getElementById('rep-rows');
+  c.innerHTML = '';
+  for (let i = 1; i <= 5; i++) {
+    const row = document.createElement('div');
+    row.className = 'rep-row';
+    row.innerHTML = `
+      <div><input type="number" id="rep_c${i}" step="0.01" placeholder="kg" style="width:100%;padding:8px;font-size:13px;border:1px solid #ddd;border-radius:6px;"></div>
+      <div><input type="number" id="rep_m${i}" step="0.01" placeholder="kg" style="width:100%;padding:8px;font-size:13px;border:1px solid #ddd;border-radius:6px;" oninput="calcDiff(${i})"></div>
+      <div><input type="number" id="rep_d${i}" step="0.001" placeholder="0.000" readonly style="width:100%;padding:8px;font-size:13px;border:1px solid #eee;border-radius:6px;background:#f5f5f3;color:#888;"></div>
+    `;
+    c.appendChild(row);
+  }
+}
+
+function calcDiff(i) {
+  const carga = parseFloat(document.getElementById('rep_c' + i)?.value) || 0;
+  const medido = parseFloat(document.getElementById('rep_m' + i)?.value) || 0;
+  const diff = document.getElementById('rep_d' + i);
+  if (diff) diff.value = (carga - medido).toFixed(3);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function v(id) { return document.getElementById(id)?.value || ''; }
+
+function submitForm() {
+  const fecha = new Date().toLocaleString('es-SV', {
+    year:'numeric', month:'2-digit', day:'2-digit',
+    hour:'2-digit', minute:'2-digit'
+  });
+  document.getElementById('fecha_emision').value = fecha;
+
+  // Guardar en localStorage como historial local
+  const registro = {
+    fecha, nombre: v('nombre'), marca: v('marca'), modelo: v('modelo'),
+    serie: v('serie'), categoria: v('categoria'), division: v('division'),
+    rango: v('rango'), masas: v('masas'),
+    temp_ini: v('temp_ini'), hum_ini: v('hum_ini'),
+    temp_fin: v('temp_fin'), hum_fin: v('hum_fin'),
+    exc_carga: v('exc_carga'),
+    pos1: v('pos1'), pos2: v('pos2'), pos3: v('pos3'), pos4: v('pos4'), pos5: v('pos5'),
+    exc_conforme: conformeState.exc,
+    rep_conforme: conformeState.rep,
+    verifico: v('verifico'), aprobo: v('aprobo')
+  };
+  try {
+    const hist = JSON.parse(localStorage.getItem('calibraciones') || '[]');
+    hist.unshift(registro);
+    localStorage.setItem('calibraciones', JSON.stringify(hist.slice(0, 200)));
+  } catch(e) {}
+
+  // Preparar PDF
+  fillPDF(registro);
+  document.getElementById('success-detail').textContent = 'Registrado el ' + fecha + '. Puedes imprimir o guardar el PDF.';
+  goStep(4);
+  document.getElementById('step-num').textContent = '¡Listo!';
+  document.getElementById('step-name').textContent = 'Certificado generado';
+  showToast('✓ Registro guardado');
+}
+
+function fillPDF(d) {
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '—'; };
+  set('p_nombre', d.nombre); set('p_serie', d.serie);
+  set('p_marca', d.marca); set('p_modelo', d.modelo);
+  set('p_categoria', d.categoria); set('p_rango', d.rango);
+  set('p_division', d.division); set('p_masas', d.masas);
+  set('p_temp_ini', d.temp_ini); set('p_hum_ini', d.hum_ini);
+  set('p_temp_fin', d.temp_fin); set('p_hum_fin', d.hum_fin);
+  set('p_exc_carga', d.exc_carga);
+  set('p_pos1', d.pos1); set('p_pos2', d.pos2); set('p_pos3', d.pos3);
+  set('p_pos4', d.pos4); set('p_pos5', d.pos5);
+  set('p_exc_conf', d.exc_conforme || '—');
+  set('p_rep_conf', d.rep_conforme || '—');
+  set('p_verifico', d.verifico); set('p_aprobo', d.aprobo);
+  set('p_fecha', d.fecha);
+  const tbody = document.getElementById('p_rep_rows');
+  tbody.innerHTML = '';
+  for (let i = 1; i <= 5; i++) {
+    const c = v('rep_c' + i), m = v('rep_m' + i), diff = v('rep_d' + i);
+    if (c || m) {
+      tbody.innerHTML += `<tr><td>${c || '—'}</td><td>${m || '—'}</td><td>${diff || '—'}</td></tr>`;
+    }
+  }
+}
+
+function printPDF() {
+  document.getElementById('pdf-preview').style.display = 'block';
+  window.print();
+  document.getElementById('pdf-preview').style.display = 'none';
+}
+
+function resetForm() {
+  document.querySelectorAll('input:not([readonly])').forEach(i => {
+    if (i.id !== 'verifico' && i.id !== 'aprobo') i.value = '';
+  });
+  conformeState = { exc: null, rep: null };
+  ['exc_si','exc_no','rep_si','rep_no'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.className = 'toggle-btn';
+  });
+  buildRepRows();
+  goStep(0);
+}
+
+// Inicializar
+buildRepRows();
+document.getElementById('fecha_emision').value = new Date().toLocaleString('es-SV');
+</script>
+</body>
+</html>
